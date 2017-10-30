@@ -24,7 +24,7 @@ def get_args():
     glove_dir = os.path.join(home, "data", "glove")
     parser.add_argument('-s', "--source_dir", default=source_dir)
     parser.add_argument('-t', "--target_dir", default=target_dir)
-    parser.add_argument("--train_name", default='train-v1.1.json')
+    parser.add_argument("--train_name", default='train.json')
     parser.add_argument('-d', "--debug", action='store_true')
     parser.add_argument("--train_ratio", default=0.9, type=int)
     parser.add_argument("--glove_corpus", default="6B")
@@ -70,6 +70,10 @@ def prepro(args):
     elif args.mode == 'single':
         assert len(args.single_path) > 0
         prepro_each(args, "NULL", out_name="single", in_path=args.single_path)
+    elif args.mode == 'cv':
+        prepro_each(args, 'train', 0.0, 0.6, out_name='train')
+        prepro_each(args, 'train', 0.6, 0.8, out_name='dev')
+        prepro_each(args, 'train', 0.8, 1.0, out_name='test')
     else:
         prepro_each(args, 'train', 0.0, args.train_ratio, out_name='train')
         prepro_each(args, 'train', args.train_ratio, 1.0, out_name='dev')
@@ -123,7 +127,7 @@ def prepro_each(args, data_type, start_ratio=0.0, stop_ratio=1.0, out_name="defa
     if not args.split:
         sent_tokenize = lambda para: [para]
 
-    source_path = in_path or os.path.join(args.source_dir, "{}-{}v1.1.json".format(data_type, args.suffix))
+    source_path = in_path or os.path.join(args.source_dir, "{}.json".format(data_type))
     source_data = json.load(open(source_path, 'r'))
 
     q, cq, y, rx, rcx, ids, idxs = [], [], [], [], [], [], []
@@ -133,9 +137,9 @@ def prepro_each(args, data_type, start_ratio=0.0, stop_ratio=1.0, out_name="defa
     answerss = []
     p = []
     word_counter, char_counter, lower_word_counter = Counter(), Counter(), Counter()
-    start_ai = int(round(len(source_data['data']) * start_ratio))
-    stop_ai = int(round(len(source_data['data']) * stop_ratio))
-    for ai, article in enumerate(tqdm(source_data['data'][start_ai:stop_ai])):
+    start_ai = int(round(len(source_data) * start_ratio))
+    stop_ai = int(round(len(source_data) * stop_ratio))
+    for ai, article in enumerate(tqdm(source_data[start_ai:stop_ai])):
         xp, cxp = [], []
         pp = []
         x.append(xp)
@@ -172,33 +176,34 @@ def prepro_each(args, data_type, start_ratio=0.0, stop_ratio=1.0, out_name="defa
                 yi = []
                 cyi = []
                 answers = []
-                for answer in qa['answers']:
-                    answer_text = answer['text']
-                    answers.append(answer_text)
-                    answer_start = answer['answer_start']
-                    answer_stop = answer_start + len(answer_text)
-                    # TODO : put some function that gives word_start, word_stop here
-                    yi0, yi1 = get_word_span(context, xi, answer_start, answer_stop)
-                    # yi0 = answer['answer_word_start'] or [0, 0]
-                    # yi1 = answer['answer_word_stop'] or [0, 1]
-                    assert len(xi[yi0[0]]) > yi0[1]
-                    assert len(xi[yi1[0]]) >= yi1[1]
-                    w0 = xi[yi0[0]][yi0[1]]
-                    w1 = xi[yi1[0]][yi1[1]-1]
-                    i0 = get_word_idx(context, xi, yi0)
-                    i1 = get_word_idx(context, xi, (yi1[0], yi1[1]-1))
-                    cyi0 = answer_start - i0
-                    cyi1 = answer_stop - i1 - 1
-                    # print(answer_text, w0[cyi0:], w1[:cyi1+1])
-                    assert answer_text[0] == w0[cyi0], (answer_text, w0, cyi0)
-                    assert answer_text[-1] == w1[cyi1]
-                    assert cyi0 < 32, (answer_text, w0)
-                    assert cyi1 < 32, (answer_text, w1)
+                answer  = qa['answer']
+                
+                answer_text = answer['text']
+                answers.append(answer_text)
+                answer_start = answer['answer_start']
+                answer_stop = answer_start + len(answer_text)
+                # TODO : put some function that gives word_start, word_stop here
+                yi0, yi1 = get_word_span(context, xi, answer_start, answer_stop)
+                # yi0 = answer['answer_word_start'] or [0, 0]
+                # yi1 = answer['answer_word_stop'] or [0, 1]
+                assert len(xi[yi0[0]]) > yi0[1]
+                assert len(xi[yi1[0]]) >= yi1[1]
+                w0 = xi[yi0[0]][yi0[1]]
+                w1 = xi[yi1[0]][yi1[1]-1]
+                i0 = get_word_idx(context, xi, yi0)
+                i1 = get_word_idx(context, xi, (yi1[0], yi1[1]-1))
+                cyi0 = answer_start - i0
+                cyi1 = answer_stop - i1 - 1
+                # print(answer_text, w0[cyi0:], w1[:cyi1+1])
+                assert answer_text[0] == w0[cyi0], (answer_text, w0, cyi0)
+                assert answer_text[-1] == w1[cyi1]
+                assert cyi0 < 32, (answer_text, w0)
+                assert cyi1 < 32, (answer_text, w1)
 
-                    yi.append([yi0, yi1])
-                    cyi.append([cyi0, cyi1])
+                yi.append([yi0, yi1])
+                cyi.append([cyi0, cyi1])
 
-                if len(qa['answers']) == 0:
+                if answer == None:
                     yi.append([(0, 0), (0, 1)])
                     cyi.append([0, 1])
                     na.append(True)
