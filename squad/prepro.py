@@ -70,10 +70,11 @@ def prepro(args):
     elif args.mode == 'single':
         assert len(args.single_path) > 0
         prepro_each(args, "NULL", out_name="single", in_path=args.single_path)
-    elif args.mode == 'cv':
-        prepro_each(args, 'train', 0.0, 0.6, out_name='train')
-        prepro_each(args, 'train', 0.6, 0.8, out_name='dev')
+    elif args.mode == 'custom':
+        prepro_each(args, 'train', 0.0, 0.8, out_name='train')
+        prepro_each(args, 'train', 0.8, 1.0, out_name='dev')
         prepro_each(args, 'train', 0.8, 1.0, out_name='test')
+        prepro_each(args, 'test', out_name='predict')
     else:
         prepro_each(args, 'train', 0.0, args.train_ratio, out_name='train')
         prepro_each(args, 'train', args.train_ratio, 1.0, out_name='dev')
@@ -178,37 +179,38 @@ def prepro_each(args, data_type, start_ratio=0.0, stop_ratio=1.0, out_name="defa
                 answers = []
                 answer  = qa['answer']
                 
-                answer_text = answer['text']
-                answers.append(answer_text)
-                answer_start = answer['answer_start']
-                answer_stop = answer_start + len(answer_text)
-                # TODO : put some function that gives word_start, word_stop here
-                yi0, yi1 = get_word_span(context, xi, answer_start, answer_stop)
-                # yi0 = answer['answer_word_start'] or [0, 0]
-                # yi1 = answer['answer_word_stop'] or [0, 1]
-                assert len(xi[yi0[0]]) > yi0[1]
-                assert len(xi[yi1[0]]) >= yi1[1]
-                w0 = xi[yi0[0]][yi0[1]]
-                w1 = xi[yi1[0]][yi1[1]-1]
-                i0 = get_word_idx(context, xi, yi0)
-                i1 = get_word_idx(context, xi, (yi1[0], yi1[1]-1))
-                cyi0 = answer_start - i0
-                cyi1 = answer_stop - i1 - 1
-                # print(answer_text, w0[cyi0:], w1[:cyi1+1])
-                assert answer_text[0] == w0[cyi0], (answer_text, w0, cyi0)
-                assert answer_text[-1] == w1[cyi1]
-                assert cyi0 < 32, (answer_text, w0)
-                assert cyi1 < 32, (answer_text, w1)
-
-                yi.append([yi0, yi1])
-                cyi.append([cyi0, cyi1])
-
-                if answer == None:
+                if answer == None or answer == "":
                     yi.append([(0, 0), (0, 1)])
                     cyi.append([0, 1])
                     na.append(True)
                 else:
                     na.append(False)
+                    
+                    answer_text = answer['text']
+                    answers.append(answer_text)
+                    answer_start = answer['answer_start']
+                    answer_stop = answer_start + len(answer_text)
+                    # TODO : put some function that gives word_start, word_stop here
+                    yi0, yi1 = get_word_span(context, xi, answer_start, answer_stop)
+                    # yi0 = answer['answer_word_start'] or [0, 0]
+                    # yi1 = answer['answer_word_stop'] or [0, 1]
+                    assert len(xi[yi0[0]]) > yi0[1]
+                    assert len(xi[yi1[0]]) >= yi1[1]
+                    w0 = xi[yi0[0]][yi0[1]]
+                    w1 = xi[yi1[0]][yi1[1]-1]
+                    i0 = get_word_idx(context, xi, yi0)
+                    i1 = get_word_idx(context, xi, (yi1[0], yi1[1]-1))
+                    cyi0 = answer_start - i0
+                    cyi1 = answer_stop - i1 - 1
+                    # print(answer_text, w0[cyi0:], w1[:cyi1+1])
+                    assert answer_text[0] == w0[cyi0], (answer_text, w0, cyi0)
+                    assert answer_text[-1] == w1[cyi1]
+                    assert cyi0 < 32, (answer_text, w0)
+                    assert cyi1 < 32, (answer_text, w1)
+
+                    yi.append([yi0, yi1])
+                    cyi.append([cyi0, cyi1])
+
 
                 for qij in qi:
                     word_counter[qij] += 1

@@ -1,0 +1,24 @@
+# SSH
+ssh -i aws.pem ubuntu@13.228.158.35
+
+# Git clone
+git clone https://github.com/waiyan1612/bi-att-flow.git
+git checkout dev
+
+# Start screen (For new run)
+screen
+
+# Resume screen (For existing run)
+screen -r
+
+# Preprocess
+python -m squad.prepro --mode custom
+
+# Train
+python -m basic.cli --mode train --noload --len_opt --cluster
+
+# Test
+python -m basic.cli --len_opt --cluster
+
+# Predict
+python -m basic.cli --mode predict --len_opt --cluster

@@ -9,7 +9,10 @@ from basic.evaluator import Evaluation, F1Evaluation
 from my.utils import short_floats
 
 import pickle
-
+import string
+import re
+import sys
+sys.getfilesystemencoding = lambda: 'UTF-8'
 
 class GraphHandler(object):
     def __init__(self, config, model):
@@ -76,4 +79,29 @@ class GraphHandler(object):
         path = path or os.path.join(self.config.answer_dir, "{}-{}.json".format(e.data_type, str(e.global_step).zfill(6)))
         with open(path, 'w') as fh:
             json.dump(e.id2answer_dict, fh)
+
+    def normalize_answer(self, s):
+        """Lower text and remove punctuation, articles and extra whitespace."""
+        def remove_articles(text):
+            return re.sub(r'\b(a|an|the)\b', ' ', text)
+        def white_space_fix(text):
+            return ' '.join(text.split())
+        def remove_punc(text):
+            exclude = set(string.punctuation)
+            return ''.join(ch for ch in text if ch not in exclude)
+        def lower(text):
+            return text.lower()
+        return white_space_fix(remove_articles(remove_punc(lower(s))))
+
+    def dump_formatted_answer(self, e, path=None):
+        assert isinstance(e, Evaluation)
+        path = path or os.path.join(self.config.answer_dir, "{}-{}.csv".format(e.data_type, str(e.global_step).zfill(6)))
+
+        fo = open(path, "w")
+        fo.write('Id,Answer\n')
+        for k, v in e.id2answer_dict.items():
+            fo.write(str(k) + ', ' + self.normalize_answer(str(v)) + '\n')
+
+        fo.close()
+
 
