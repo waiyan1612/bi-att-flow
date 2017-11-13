@@ -8,7 +8,7 @@ flags = tf.app.flags
 
 # Names and directories
 flags.DEFINE_string("model_name", "basic", "Model name [basic]")
-flags.DEFINE_string("data_dir", "data/squad", "Data dir [data/squad]")
+flags.DEFINE_string("data_dir", "glove/squad", "Data dir [glove/squad]")
 flags.DEFINE_string("run_id", "0", "Run ID [0]")
 flags.DEFINE_string("out_base_dir", "out", "out base dir [out]")
 flags.DEFINE_string("forward_name", "single", "Forward name [single]")
@@ -37,12 +37,12 @@ flags.DEFINE_float("th", 0.5, "Threshold [0.5]")
 flags.DEFINE_integer("batch_size", 60, "Batch size [60]")
 flags.DEFINE_integer("val_num_batches", 100, "validation num batches [100]")
 flags.DEFINE_integer("test_num_batches", 0, "test num batches [0]")
-flags.DEFINE_integer("num_epochs", 12, "Total number of epochs for training [12]")
 flags.DEFINE_integer("num_steps", 20000, "Number of steps [20000]")
+flags.DEFINE_integer("num_epochs", 15, "Total number of epochs for training [12]")
 flags.DEFINE_integer("load_step", 0, "load step [0]")
 flags.DEFINE_float("init_lr", 0.001, "Initial learning rate [0.001]")
-flags.DEFINE_float("input_keep_prob", 0.8, "Input keep prob for the dropout of LSTM weights [0.8]")
-flags.DEFINE_float("keep_prob", 0.8, "Keep prob for the dropout of Char-CNN weights [0.8]")
+flags.DEFINE_float("input_keep_prob", 0.5, "Input keep prob for the dropout of LSTM weights [0.8]")
+flags.DEFINE_float("keep_prob", 0.5, "Keep prob for the dropout of Char-CNN weights [0.8]")
 flags.DEFINE_float("wd", 0.0, "L2 weight decay for regularization [0.0]")
 flags.DEFINE_integer("hidden_size", 100, "Hidden size [100]")
 flags.DEFINE_integer("char_out_size", 100, "char-level word embedding size [100]")
@@ -57,8 +57,8 @@ flags.DEFINE_bool("share_lstm_weights", True, "Share pre-processing (phrase-leve
 flags.DEFINE_float("var_decay", 0.999, "Exponential moving average decay for variables [0.999]")
 
 # Optimizations
-flags.DEFINE_bool("cluster", False, "Cluster data for faster training [False]")
-flags.DEFINE_bool("len_opt", False, "Length optimization? [False]")
+flags.DEFINE_bool("cluster", True, "Cluster data for faster training [False]")
+flags.DEFINE_bool("len_opt", True, "Length optimization? [False]")
 flags.DEFINE_bool("cpu_opt", False, "CPU optimization? GPU computation can be slower [False]")
 
 # Logging and saving options
@@ -106,6 +106,25 @@ def main(_):
 
     config.out_dir = os.path.join(config.out_base_dir, config.model_name, str(config.run_id).zfill(2))
 
+    m(config)
+
+def train():
+    config = flags.FLAGS
+    config.load = False
+    config.mode = "train"
+    config.out_dir = os.path.join(config.out_base_dir, config.model_name, str(config.run_id).zfill(2))
+    m(config)
+
+def test():
+    config = flags.FLAGS
+    config.mode = "test"
+    config.out_dir = os.path.join(config.out_base_dir, config.model_name, str(config.run_id).zfill(2))
+    m(config)
+
+def predict():
+    config = flags.FLAGS
+    config.mode = "predict"
+    config.out_dir = os.path.join(config.out_base_dir, config.model_name, str(config.run_id).zfill(2))
     m(config)
 
 if __name__ == "__main__":

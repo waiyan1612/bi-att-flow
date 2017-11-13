@@ -11,8 +11,6 @@ from my.utils import short_floats
 import pickle
 import string
 import re
-import sys
-sys.getfilesystemencoding = lambda: 'UTF-8'
 
 class GraphHandler(object):
     def __init__(self, config, model):
@@ -97,11 +95,14 @@ class GraphHandler(object):
         assert isinstance(e, Evaluation)
         path = path or os.path.join(self.config.answer_dir, "{}-{}.csv".format(e.data_type, str(e.global_step).zfill(6)))
 
+        #with open("results.json", 'w') as fh:
+        #    json.dump(e.id2answer_dict, fh)
+
         fo = open(path, "w")
         fo.write('Id,Answer\n')
         for k, v in e.id2answer_dict.items():
-            fo.write(str(k) + ', ' + self.normalize_answer(str(v)) + '\n')
+            if k == 'scores':
+                continue
+            fo.write(str(k) + ',' + self.normalize_answer(v) + '\n')
 
         fo.close()
-
-
