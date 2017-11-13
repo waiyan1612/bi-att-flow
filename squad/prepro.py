@@ -19,9 +19,9 @@ def main():
 def get_args():
     parser = argparse.ArgumentParser()
     home = os.path.expanduser("~")
-    source_dir = os.path.join(home, "data", "squad")
+    source_dir = "input"
     target_dir = "data/squad"
-    glove_dir = os.path.join(home, "data", "glove")
+    glove_dir = "glove"
     parser.add_argument('-s', "--source_dir", default=source_dir)
     parser.add_argument('-t', "--target_dir", default=target_dir)
     parser.add_argument("--train_name", default='train.json')
@@ -30,7 +30,7 @@ def get_args():
     parser.add_argument("--glove_corpus", default="6B")
     parser.add_argument("--glove_dir", default=glove_dir)
     parser.add_argument("--glove_vec_size", default=100, type=int)
-    parser.add_argument("--mode", default="full", type=str)
+    parser.add_argument("--mode", default="custom", type=str)
     parser.add_argument("--single_path", default="", type=str)
     parser.add_argument("--tokenizer", default="PTB", type=str)
     parser.add_argument("--url", default="vision-server2.corp.ai2", type=str)
@@ -52,7 +52,6 @@ def create_all(args):
     train_data['data'].extend(dev_data['data'])
     print("dumping all data ...")
     json.dump(train_data, open(out_path, 'w'))
-
 
 def prepro(args):
     if not os.path.exists(args.target_dir):
